@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ctgkit — Alert Strategy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --fg: #1a1d23;
+    --muted: #5b6470;
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --border: #e2e5ea;
+    --accent: #0b5fa5;
+    --warn: #b5651d;
+    --crit: #b3261e;
+    --ok: #2a7a3b;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 17px; margin: 28px 0 8px; }
+  p { margin: 8px 0 12px; }
+  .lede { color: var(--muted); font-size: 17px; margin-bottom: 8px; }
+  code, kbd {
+    font-family: var(--mono);
+    font-size: 0.92em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 14.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.code { font-family: var(--mono); font-size: 13px; }
+  .pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .pill.none { background: #e9f3ec; color: var(--ok); }
+  .pill.warn { background: #fff1de; color: var(--warn); }
+  .pill.crit { background: #fde8e6; color: var(--crit); }
+  .note {
+    border-left: 3px solid var(--accent);
+    background: #f3f8fd;
+    padding: 10px 14px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .warn-box {
+    border-left: 3px solid var(--crit);
+    background: #fdf2f1;
+    padding: 10px 14px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .src {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    margin-left: 6px;
+  }
+  ul, ol { margin: 8px 0 12px; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .toc { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; }
+  .toc ul { margin: 0; padding-left: 18px; }
+  .meta { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>ctgkit — Alert Strategy</h1>
+<p class="lede">How the library decides between <span class="pill none">none</span> <span class="pill warn">warning</span> <span class="pill crit">critical</span>, and why that decision is kept separate from the guideline category.</p>
+<p class="meta">Source of truth: <code>ctgkit/alerts.py</code> → <code>score_and_alert()</code>. Every rule below cites the line range where it lives.</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#clinical">1. For clinicians — what this does, in plain terms</a></li>
+    <li><a href="#model">2. The mental model: category vs. alert</a></li>
+    <li><a href="#flow">3. End-to-end scoring flow</a></li>
+    <li><a href="#rules">4. The rules, one-by-one</a></li>
+    <li><a href="#thresholds">5. Thresholds &amp; safety floors</a></li>
+    <li><a href="#modify">6. How to modify (technical)</a></li>
+  </ul>
+</div>
+
+<h2 id="clinical">1. For clinicians — what this does, in plain terms</h2>
+
+<p>This page describes the rules a piece of decision-support software uses to decide whether a 30-minute CTG trace deserves your attention <em>right now</em>. You don&rsquo;t need to read the code; this section is for you.</p>
+
+<h3>What the software is trying to do</h3>
+<p>Every 30 minutes, it looks at the trace and produces two separate things:</p>
+<ul>
+  <li>A <strong>guideline category</strong> (1 / 2 / 3) — reassuring, indeterminate, or abnormal — exactly the way the guideline you picked (FIGO, NICE, ACOG, or SOGC) would classify the trace.</li>
+  <li>An <strong>alert level</strong> — <span class="pill none">none</span>, <span class="pill warn">warning</span>, or <span class="pill crit">critical</span> — answering a different question: <em>&ldquo;should someone look at this now?&rdquo;</em></li>
+</ul>
+
+<h3>Why keep the alert separate from the category</h3>
+<p>The middle tier of every guideline — &ldquo;indeterminate&rdquo; or Category II — is enormous; a large fraction of all traces in any labour ward live there. If every Category II rang a bell, the bells would never stop and you&rsquo;d learn to tune them out. So the software keeps the category honest to the guideline, and only escalates the alert when something more specific is going on: a long deceleration, a persistent flat trace, recurrent late dips, a worsening trend, a sinusoidal pattern, or a stack of clinical risk factors that the trace alone wouldn&rsquo;t justify.</p>
+<p>The short version: <strong>category = what the guideline calls it. Alert = whether you should walk over to the bedside.</strong></p>
+
+<h3>What raises the alert</h3>
+<p>Roughly in order of how strongly each one pushes towards <span class="pill crit">critical</span>:</p>
+<ul>
+  <li><strong>A single severe acute event.</strong> A prolonged deceleration ≥ 5 min, or a suspected sinusoidal pattern, will reach <span class="pill crit">critical</span> on its own.</li>
+  <li><strong>An abnormal guideline category</strong> (Category 3 / pathological / abnormal) on its own already meets the critical threshold.</li>
+  <li><strong>Recurrent worrying patterns</strong> — recurrent late decelerations, complicated variable decelerations.</li>
+  <li><strong>Baseline abnormalities</strong> — tachycardia &gt; 160 bpm (more weight if &gt; 180), bradycardia &lt; 110 bpm (more weight if &lt; 100), or a baseline that is steadily rising over the epoch.</li>
+  <li><strong>Reduced variability that has lasted a while</strong> — &lt; 5 bpm for 30 min or more, with more weight at ≥ 50 min.</li>
+  <li><strong>Tachysystole</strong> (&gt; 5 contractions per 10 min) — but only if the toco channel is good enough to trust the count.</li>
+  <li><strong>Deterioration compared to the previous epoch</strong> — a Category 1 → 2 or 2 → 3 transition adds weight; an improving trace gets a small reduction.</li>
+  <li><strong>Clinical risk factors you supply</strong> — oxytocin, meconium, fever, sepsis, prolonged ROM, pre-eclampsia, diabetes, growth restriction, prematurity, previous caesarean, slow progress. None of these alert on their own, but they lower the bar so an otherwise &ldquo;borderline&rdquo; trace tips into <span class="pill warn">warning</span> earlier in a higher-risk context.</li>
+  <li><strong>Degraded (but still usable) signal quality</strong> — a small nudge upward, never a reason to <em>reassure</em>.</li>
+</ul>
+
+<h3>The safety guarantees you can rely on</h3>
+<div class="note">
+  <ul>
+    <li><strong>A bad signal never produces an &ldquo;all clear.&rdquo;</strong> If the FHR trace is too poor to classify, the software refuses to assign a category and the alert is forced to <span class="pill warn">warning</span> with a &ldquo;review the trace&rdquo; concern. It will never silently reassure you on unreadable data.</li>
+    <li><strong>Category 3 is never silent.</strong> If the trace is graded abnormal, the alert will be at least <span class="pill warn">warning</span> even if the rest of the scoring would have suggested otherwise.</li>
+    <li><strong>A long deceleration is caught by duration alone.</strong> If toco is missing or degraded so we can&rsquo;t cleanly call a dip &ldquo;late&rdquo; or &ldquo;variable,&rdquo; a sustained drop (≥ 2 min) is still flagged on duration. No silent misses because of toco quality.</li>
+    <li><strong>Unreliable toco never drives escalation.</strong> If toco quality is poor, tachysystole is still reported as &ldquo;possible, low-confidence&rdquo; for your review, but it is not allowed to push the alert level up.</li>
+    <li><strong>Every concern carries its evidence.</strong> Each finding lists what it is, when in the epoch it started, how long it lasted, and the numbers behind it — so you can independently confirm the basis of any alert.</li>
+  </ul>
+</div>
+
+<h3>When to trust the alert less</h3>
+<ul>
+  <li><strong>Low confidence.</strong> The result lists a <code>confidence</code> field of <em>high</em>, <em>medium</em>, or <em>low</em>. A low-confidence result means the signal was usable but degraded; treat the alert as a prompt to look, not as a verdict.</li>
+  <li><strong>Possible sinusoidal pattern.</strong> True sinusoidal patterns are rare and false positives exist. The software flags them aggressively (<span class="pill crit">critical</span>) precisely because you need to be the one who confirms or rules them out.</li>
+  <li><strong>Tachysystole &ldquo;low-confidence (toco).&rdquo;</strong> The count is suspect; treat as a hint to check toco placement, not as a count you can act on numerically.</li>
+  <li><strong>Anything you would not have called yourself.</strong> The software is decision <em>support</em>. It does not diagnose, treat, or replace clinical judgement; your read of the trace and the clinical picture overrides it.</li>
+</ul>
+
+<div class="warn-box">
+  <strong>Regulatory note.</strong> ctgkit is not a cleared medical device. It is built to make a regulated path defensible (auditable outputs, explainable findings, human-in-the-loop intent), but the rules described here have not been validated against annotated clinical data and must not be used as the sole basis for a clinical decision.
+</div>
+
+<h2 id="model">2. The mental model: category vs. alert</h2>
+
+<p>ctgkit produces <strong>two</strong> independent verdicts on every epoch:</p>
+
+<table>
+  <thead>
+    <tr><th>Output</th><th>Question it answers</th><th>Who decides</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>category</code> (1 / 2 / 3)</td>
+      <td>What does the chosen <em>guideline</em> call this trace? (reassuring / indeterminate / abnormal)</td>
+      <td>The guideline pack you picked (FIGO, NICE, ACOG, SOGC).</td>
+    </tr>
+    <tr>
+      <td><code>alert</code> (none / warning / critical)</td>
+      <td>Is escalation justified <em>right now</em>?</td>
+      <td>A separate, guideline-agnostic scorer that weighs persistence, acute events, trend, signal quality, and clinical risk factors.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The split is deliberate, and it&rsquo;s the single most important design idea to understand. The middle tier of every guideline (especially ACOG &ldquo;Category II&rdquo;) is enormous — a huge fraction of all traces land there. If every Category 2 fired a page, clinicians would be buzzed constantly and start ignoring the system. The category stays faithful to the guideline; the alert <em>only</em> escalates when escalation is actually justified.</p>
+
+<div class="note">
+  <strong>Rule of thumb.</strong> The guideline pack changes the category far more than it changes the alert. The alert scorer is the same regardless of pack.
+</div>
+
+<h2 id="flow">3. End-to-end scoring flow</h2>
+
+<p>One call to <code>score_and_alert(category, features, quality, meta, prev)</code> does this:</p>
+
+<ol>
+  <li><strong>Short-circuit on bad signal.</strong> If FHR quality was too poor to assign a category, return <span class="pill warn">warning</span> immediately with a single concern. We never silently &ldquo;reassure&rdquo; on unreadable data.</li>
+  <li><strong>Add a base score</strong> from the guideline category.</li>
+  <li><strong>Add per-finding contributions</strong> for acute events, recurrent patterns, baseline, variability, contractions.</li>
+  <li><strong>Compare to the previous epoch</strong> and adjust for trend (worsening / improving / stable).</li>
+  <li><strong>Stack clinical risk factors</strong> from the supplied <code>metadata</code> dict.</li>
+  <li><strong>Bump for degraded (but still usable) signal quality.</strong></li>
+  <li><strong>Floor the score at 0,</strong> compare to thresholds, choose the alert level.</li>
+  <li><strong>Apply the safety floor:</strong> Category 3 (abnormal) can never produce <span class="pill none">none</span>.</li>
+  <li><strong>Sort concerns by severity</strong> (high → moderate → low → info) so the most important one renders first.</li>
+</ol>
+
+<h2 id="rules">4. The rules, one-by-one</h2>
+
+<h3>3.1 Insufficient FHR signal <span class="src">alerts.py:47–56</span></h3>
+<p>If <code>category is None</code> or features couldn&rsquo;t be extracted, the scorer returns immediately with:</p>
+<ul>
+  <li>Alert = <span class="pill warn">warning</span> (never <span class="pill none">none</span>, never <span class="pill crit">critical</span>)</li>
+  <li>Score = 50 (informational; not used for thresholding)</li>
+  <li>One concern: <code>signal_quality_risk</code> &mdash; &ldquo;Insufficient fetal heart signal&rdquo;</li>
+</ul>
+<p>This is the &ldquo;bad signal never reassures&rdquo; safety invariant.</p>
+
+<h3>3.2 Base contribution from category <span class="src">alerts.py:59–62</span></h3>
+<table>
+  <thead><tr><th>Category</th><th class="num">Score added</th></tr></thead>
+  <tbody>
+    <tr><td>Reassuring (1)</td><td class="num">0</td></tr>
+    <tr><td>Indeterminate (2)</td><td class="num">+30</td></tr>
+    <tr><td>Abnormal (3)</td><td class="num">+100</td></tr>
+  </tbody>
+</table>
+<p>Abnormal on its own already meets the <span class="pill crit">critical</span> threshold (100).</p>
+
+<h3>3.3 Acute deceleration events (mutually exclusive) <span class="src">alerts.py:65–103</span></h3>
+<p>The three rules below are an <code>if/elif/elif</code> chain — at most one fires per epoch (the most severe).</p>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th><th>Concern label</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Prolonged deceleration ≥ 5 min (<code>has_prolonged_gt5</code>)</td>
+      <td class="num">+100</td><td>high</td><td><code>prolonged_deceleration</code></td>
+    </tr>
+    <tr>
+      <td>Deceleration ≥ 3 min without quick recovery (<code>has_acute_event_ge3 &amp;&amp; !quick_recovery</code>)</td>
+      <td class="num">+70</td><td>high</td><td><code>prolonged_deceleration</code></td>
+    </tr>
+    <tr>
+      <td>Any deceleration ≥ 2 min regardless of morphology (<code>has_prolonged_any</code>)</td>
+      <td class="num">+40</td><td>high</td><td><code>prolonged_deceleration</code></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Why &ldquo;regardless of morphology&rdquo;?</strong> A long dip is dangerous even if we can&rsquo;t cleanly classify it as late or variable (e.g. because toco was missing or degraded). Duration alone is enough to escalate.</p>
+
+<h3>3.4 Sinusoidal pattern <span class="src">alerts.py:105–111</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th></tr></thead>
+  <tbody><tr><td><code>features.sinusoidal</code></td><td class="num">+100</td><td>high</td></tr></tbody>
+</table>
+<p>Standalone <span class="pill crit">critical</span> trigger; flagged for urgent clinician confirmation because false positives exist.</p>
+
+<h3>3.5 Recurrent &amp; morphology concerns <span class="src">alerts.py:114–129</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th></tr></thead>
+  <tbody>
+    <tr><td>Recurrent late decelerations (<code>n_recurrent_late &gt; 0</code>)</td><td class="num">+35</td><td>high</td></tr>
+    <tr><td>Complicated variable decelerations (<code>n_complicated_variable &gt; 0</code>)</td><td class="num">+20</td><td>moderate</td></tr>
+  </tbody>
+</table>
+
+<h3>3.6 Baseline rate <span class="src">alerts.py:132–147</span></h3>
+<table>
+  <thead><tr><th>Baseline (bpm)</th><th class="num">Score</th><th>Severity</th><th>Concern</th></tr></thead>
+  <tbody>
+    <tr><td>&gt; 180</td><td class="num">+25</td><td>high</td><td><code>persistent_tachycardia</code></td></tr>
+    <tr><td>161 – 180</td><td class="num">+12</td><td>moderate</td><td><code>persistent_tachycardia</code></td></tr>
+    <tr><td>100 – 109</td><td class="num">+12</td><td>moderate</td><td><code>low_baseline</code></td></tr>
+    <tr><td>&lt; 100</td><td class="num">+30</td><td>high</td><td><code>low_baseline</code></td></tr>
+  </tbody>
+</table>
+
+<h3>3.7 Rising baseline <span class="src">alerts.py:150–155</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th></tr></thead>
+  <tbody><tr><td><code>baseline_slope_bpm_per_min &gt; 0.5</code></td><td class="num">+8</td><td>low</td></tr></tbody>
+</table>
+<p>Marked as a worsening trend on the concern itself.</p>
+
+<h3>3.8 Reduced variability <span class="src">alerts.py:158–170</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th></tr></thead>
+  <tbody>
+    <tr><td>Variability &lt; 5 bpm for ≥ 50 min</td><td class="num">+25</td><td>high</td></tr>
+    <tr><td>Variability &lt; 5 bpm for 30 – 49 min</td><td class="num">+12</td><td>moderate</td></tr>
+  </tbody>
+</table>
+
+<h3>3.9 Tachysystole <span class="src">alerts.py:173–191</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>&gt; 5 contractions / 10 min, toco quality OK</td><td class="num">+10</td><td>moderate</td><td>contributes to alert</td></tr>
+    <tr><td>Same, but toco quality rejected</td><td class="num">0</td><td>low</td><td>concern surfaced for review, but <strong>does not move the score</strong></td></tr>
+  </tbody>
+</table>
+<p>This is the &ldquo;degraded toco never drives escalation&rdquo; invariant: the count is unreliable when toco quality is poor, so it&rsquo;s reported but not weighted.</p>
+
+<h3>3.10 Trend vs. previous epoch <span class="src">alerts.py:194–203</span></h3>
+<p>If a <code>prev</code> epoch with a known category is supplied:</p>
+<table>
+  <thead><tr><th>Change</th><th class="num">Score Δ</th><th>Trend label</th></tr></thead>
+  <tbody>
+    <tr><td>Category went up (e.g. 1→2, 2→3)</td><td class="num">+20</td><td>worsening</td></tr>
+    <tr><td>Same category</td><td class="num">0</td><td>stable</td></tr>
+    <tr><td>Category went down</td><td class="num">−10</td><td>improving</td></tr>
+  </tbody>
+</table>
+
+<h3>3.11 Clinical risk stacking <span class="src">alerts.py:20–34, 205–211</span></h3>
+<p>Each key set to truthy in the <code>metadata</code> dict adds a weight and surfaces an <span class="pill none" style="background:#eef0f3;color:var(--muted)">info</span> concern. Unrecognised keys are ignored.</p>
+<table>
+  <thead><tr><th>Metadata key</th><th class="num">Weight</th></tr></thead>
+  <tbody>
+    <tr><td><code>sepsis</code></td><td class="num">+18</td></tr>
+    <tr><td><code>growth_restriction</code></td><td class="num">+14</td></tr>
+    <tr><td><code>oxytocin</code></td><td class="num">+12</td></tr>
+    <tr><td><code>fever</code></td><td class="num">+12</td></tr>
+    <tr><td><code>meconium</code></td><td class="num">+10</td></tr>
+    <tr><td><code>preeclampsia</code></td><td class="num">+10</td></tr>
+    <tr><td><code>prolonged_rom</code></td><td class="num">+8</td></tr>
+    <tr><td><code>prematurity</code></td><td class="num">+8</td></tr>
+    <tr><td><code>previous_cesarean</code></td><td class="num">+8</td></tr>
+    <tr><td><code>diabetes</code></td><td class="num">+6</td></tr>
+    <tr><td><code>slow_progress</code></td><td class="num">+6</td></tr>
+  </tbody>
+</table>
+
+<h3>3.12 Reduced signal confidence <span class="src">alerts.py:214–220</span></h3>
+<table>
+  <thead><tr><th>Trigger</th><th class="num">Score</th><th>Severity</th></tr></thead>
+  <tbody><tr><td><code>quality.low_confidence</code> (raw usable &lt; 0.95 but ≥ 0.80)</td><td class="num">+10</td><td>low</td></tr></tbody>
+</table>
+<p>Below 0.80 usable, we don&rsquo;t reach this branch at all — we already short-circuited at step 3.1.</p>
+
+<h2 id="thresholds">5. Thresholds &amp; safety floors</h2>
+
+<h3>4.1 The two thresholds <span class="src">alerts.py:17–18, 222–228</span></h3>
+<table>
+  <thead><tr><th>Score range</th><th>Alert level</th></tr></thead>
+  <tbody>
+    <tr><td>score &lt; 40</td><td><span class="pill none">none</span></td></tr>
+    <tr><td>40 ≤ score &lt; 100</td><td><span class="pill warn">warning</span></td></tr>
+    <tr><td>score ≥ 100</td><td><span class="pill crit">critical</span></td></tr>
+  </tbody>
+</table>
+<p>The score is floored at zero before comparison, so an improving trend on an otherwise clean trace can&rsquo;t produce a negative score.</p>
+
+<h3>4.2 Safety floors</h3>
+<ul>
+  <li><strong>Bad signal never reassures.</strong> No category ⇒ forced <span class="pill warn">warning</span>. <span class="src">alerts.py:47–56</span></li>
+  <li><strong>Category 3 never silences.</strong> If the score somehow lands below 40 on an <code>ABNORMAL</code> category, the alert is bumped up to <span class="pill warn">warning</span>. <span class="src">alerts.py:231–232</span></li>
+</ul>
+
+<h3>4.3 Worked example</h3>
+<p>An indeterminate trace, recurrent late decels, oxytocin running, signal a bit degraded:</p>
+<pre><code>category = INDETERMINATE         +30
+n_recurrent_late &gt; 0            +35
+oxytocin in metadata             +12
+quality.low_confidence           +10
+                                ----
+                          score = 87  →  WARNING  (40 ≤ 87 &lt; 100)
+</code></pre>
+<p>Add a prolonged ≥ 2 min decel on the next epoch (+40) and the trace tips to <span class="pill crit">critical</span> at 127.</p>
+
+<h2 id="modify">6. How to modify the alert strategy (technical)</h2>
+
+<p>The scorer is intentionally one file, with named constants and a single function. Tuning is local.</p>
+
+<h3>5.1 Where each lever lives</h3>
+<table>
+  <thead><tr><th>What you want to change</th><th>File</th><th>Symbol</th></tr></thead>
+  <tbody>
+    <tr><td>Warning / critical cutoffs</td><td class="code">ctgkit/alerts.py</td><td class="code">WARNING_THRESHOLD, CRITICAL_THRESHOLD</td></tr>
+    <tr><td>Clinical risk-factor weights</td><td class="code">ctgkit/alerts.py</td><td class="code">_RISK_WEIGHTS</td></tr>
+    <tr><td>Per-rule score increments</td><td class="code">ctgkit/alerts.py</td><td class="code">score_and_alert() — the <code>score += N</code> lines</td></tr>
+    <tr><td>What counts as a &ldquo;prolonged&rdquo; / &ldquo;acute&rdquo; decel</td><td class="code">ctgkit/features.py</td><td class="code">has_prolonged_gt5 / has_acute_event_ge3 / has_prolonged_any</td></tr>
+    <tr><td>Variability / baseline detector thresholds</td><td class="code">ctgkit/features.py</td><td class="code">extract_features()</td></tr>
+    <tr><td>Quality gate (when a signal is &ldquo;too poor&rdquo;)</td><td class="code">ctgkit/preprocess.py</td><td class="code">preprocess()</td></tr>
+    <tr><td>Concern labels / titles / wording</td><td class="code">ctgkit/alerts.py</td><td class="code">Concern(...) constructors inside score_and_alert()</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 Common tuning recipes</h3>
+
+<p><strong>Make the system less chatty</strong> &mdash; raise the warning cutoff:</p>
+<pre><code># ctgkit/alerts.py
+WARNING_THRESHOLD = 50      # was 40
+CRITICAL_THRESHOLD = 110    # was 100
+</code></pre>
+
+<p><strong>Give a site more weight on oxytocin (e.g. for induction wards):</strong></p>
+<pre><code>_RISK_WEIGHTS = {
+    ...
+    "oxytocin": 20,         # was 12
+    ...
+}
+</code></pre>
+
+<p><strong>Add a new clinical risk factor</strong> &mdash; one dict entry; the metadata dict will be inspected automatically:</p>
+<pre><code>_RISK_WEIGHTS = {
+    ...
+    "twins": 10,            # new
+}
+
+# Caller can now do:
+ctgkit.analyze(sig, metadata={"twins": True})
+</code></pre>
+
+<p><strong>Add a brand-new rule</strong> &mdash; one branch inside <code>score_and_alert()</code>:</p>
+<pre><code>if f.some_new_feature:
+    score += 15
+    concerns.append(Concern(
+        "my_new_rule", "Human-readable title",
+        Severity.MODERATE, "one-line explanation",
+        supporting_channels=["fhr"],
+        evidence={"value": f.some_new_feature},
+    ))
+</code></pre>
+
+<p>If the rule needs data that isn&rsquo;t in <code>Features</code> yet, also add it to <code>extract_features()</code> in <code>ctgkit/features.py</code>.</p>
+
+<h3>5.3 Things to be careful with</h3>
+<div class="warn-box">
+  <ul>
+    <li><strong>Don&rsquo;t remove the safety floors.</strong> The &ldquo;no category ⇒ warning&rdquo; short-circuit and the &ldquo;ABNORMAL never silent&rdquo; bump are load-bearing. Multiple tests pin them in place &mdash; see <code>tests/test_behaviour.py</code>.</li>
+    <li><strong>Keep the acute-event branch as <code>if/elif/elif</code>.</strong> They&rsquo;re mutually exclusive on purpose so a single decel doesn&rsquo;t double- or triple-count.</li>
+    <li><strong>Tachysystole on low-confidence toco must not contribute to the score.</strong> Removing the <code>tachysystole_low_confidence</code> branch would let unreliable contraction counts drive escalation.</li>
+    <li><strong>Re-run the test suite</strong> after any tuning:
+      <pre><code>python -m pytest -q</code></pre>
+      Behaviour tests assert the exact level (none / warning / critical) on canonical synthetic traces; if you&rsquo;ve genuinely changed the policy, update those tests in the same commit so the new policy is the asserted contract.</li>
+  </ul>
+</div>
+
+<h3>5.4 Versioning a policy change</h3>
+<p>The <code>EpochResult</code> records <code>library_version</code> and <code>pack_version</code> on every output for audit. When you change a weight or threshold, bump <code>ctgkit/version.py</code> (and <code>pyproject.toml</code>) so downstream consumers can tell that a result produced today wasn&rsquo;t generated under the same policy as one produced last month.</p>
+
+<p class="meta" style="margin-top: 48px;">This document is generated from a reading of <code>ctgkit/alerts.py</code>. If you change that file, regenerate or update this page so the policy and its documentation don&rsquo;t drift.</p>
+
+</main>
+</body>
+</html>
