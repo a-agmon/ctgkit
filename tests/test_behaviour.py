@@ -95,6 +95,29 @@ def test_recurrent_late_is_high_concern():
     assert r.alert == AlertLevel.CRITICAL
 
 
+def test_recurrent_late_with_preserved_compensation_not_critical():
+    """The variability/acceleration modifier: recurrent late decels with
+    preserved accelerations AND moderate variability describe a compensating
+    fetus, not the abnormal extreme. Category must drop to indeterminate and
+    the alert must stay below critical, across all packs."""
+    sig = H.trace_recurrent_late_with_accels(n_contractions=10)
+    for g in ("figo", "nice", "sogc", "acog"):
+        r = analyze(sig, guideline=g)
+        assert r.category == Category.INDETERMINATE, g
+        assert r.alert != AlertLevel.CRITICAL, g
+        assert any(c.label == "protective_features" for c in r.concerns), g
+
+
+def test_preserved_compensation_does_not_rescue_acute_event():
+    """Accelerations must NOT downgrade a hard pathological feature: a
+    prolonged (>=5 min) deceleration stays Category 3 / critical even if the
+    rest of the trace looks reassuring."""
+    sig = H.trace_with_decel(width_s=360, depth=50, with_toco=True)
+    r = analyze(sig, guideline="figo")
+    assert r.category == Category.ABNORMAL
+    assert r.alert == AlertLevel.CRITICAL
+
+
 # --------------------------------------------- signal quality / confidence
 def test_raw_signal_quality_limits_confidence():
     """Scattered dropout that interpolation fills must NOT yield high confidence."""

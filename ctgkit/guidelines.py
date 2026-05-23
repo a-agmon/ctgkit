@@ -57,6 +57,45 @@ def _common_cat3(f: Features) -> bool:
     return False
 
 
+def _moderate_variability(f: Features) -> bool:
+    return (f.variability_bpm is not None
+            and 6 <= f.variability_bpm <= 25
+            and f.variability_low_min < 30)
+
+
+def reassuring_compensation(f: Features) -> bool:
+    """Preserved autonomic reserve.
+
+    Accelerations together with sustained moderate variability are the
+    strongest bedside evidence that the fetus is NOT acidotic *now*. This is
+    the clinical modifier that separates 'recurrent late decels in a
+    compensating fetus' (suspicious) from 'recurrent late decels on a flat
+    trace' (pathological). It never overrides a hard pathological feature —
+    those are handled by `_common_cat3`.
+    """
+    return len(f.accelerations) >= 1 and _moderate_variability(f)
+
+
+def classify(pack: GuidelinePack, f: Features) -> Category:
+    """Run the pack's guideline-faithful rule, then apply ONE shared clinical
+    modifier.
+
+    A category that is abnormal *only* on deceleration morphology — i.e. it
+    does not trip `_common_cat3`'s hard pathological features (sinusoidal,
+    prolonged >=5 min, >=3 min with poor recovery, variability <3 with decels,
+    extreme baseline with decels) — is downgraded to indeterminate when the
+    fetus shows reassuring compensation. This encodes the 'are variability and
+    accelerations preserved?' question that all four guideline families weigh
+    but the raw per-feature decel rules omit.
+    """
+    cat = pack.classify(f)
+    if (cat == Category.ABNORMAL
+            and not _common_cat3(f)
+            and reassuring_compensation(f)):
+        return Category.INDETERMINATE
+    return cat
+
+
 # ---------- FIGO ----------
 def _figo(f: Features) -> Category:
     if _common_cat3(f):
