@@ -33,6 +33,8 @@ The library normalizes every guideline to a 3-tier canonical category:
 
 The mapping is clinically natural but **not equivalent in severity distribution** — which is exactly why the category is preserved per-pack and the alert is computed separately. The reference implementation demonstrates this: a recurrent-late-deceleration trace classifies as Category 3 under FIGO/NICE/SOGC but Category 2 under ACOG — yet the alert layer keeps the ACOG case at `warning` rather than silencing it.
 
+**Compensation modifier.** After a pack assigns its category, a single shared rule (`guidelines.classify`) asks the question the raw per-feature decel rules omit: *are variability and accelerations preserved?* A category that is abnormal **only** on deceleration morphology — i.e. it does not trip a hard pathological feature (sinusoidal, prolonged ≥5 min, ≥3 min with poor recovery, variability <3 with decels, extreme baseline with decels) — is downgraded to **indeterminate** when accelerations are present **and** variability is moderate. This encodes the clinical fact that accelerations plus moderate variability are the strongest bedside evidence the fetus is not acidotic now, so recurrent late decels in a *compensating* fetus are suspicious rather than the abnormal extreme. The alert layer surfaces this as an INFO `protective_features` concern for auditability.
+
 ---
 
 ## 3. Public API
@@ -336,7 +338,7 @@ python -m pytest -q
 
 ---
 
-*Reference implementation status: end-to-end runnable; **49/49 tests pass** (`python -m pytest -q`); verified across normal, tachycardia, recurrent-late-decel, prolonged-decel, low-variability, signal-loss, and degraded-toco cases, plus all four guideline packs, CSV round-trip, plotting (Signal or CSV path, repeated calls), the recommended service config, and tachysystole confidence under poor toco.*
+*Reference implementation status: end-to-end runnable; **53/53 tests pass** (`python -m pytest -q`); verified across normal, tachycardia, recurrent-late-decel (with and without preserved compensation), prolonged-decel, low-variability, signal-loss, and degraded-toco cases, plus all four guideline packs, CSV round-trip, plotting (Signal or CSV path, repeated calls), the recommended service config, and tachysystole confidence under poor toco.*
 
 ---
 

@@ -62,6 +62,20 @@ def trace_recurrent_late(n_contractions=10, minutes=30, hz=4.0, seed=0):
     return from_arrays(fhr=fhr, hz=hz, toco=toco)
 
 
+def trace_recurrent_late_with_accels(n_contractions=10, minutes=30, hz=4.0, seed=0):
+    """Recurrent late decels, but with preserved accelerations and moderate
+    variability — i.e. a compensating fetus. Mirrors the real-world trace where
+    late decels coexist with reassuring autonomic tone."""
+    n = int(minutes * 60 * hz)
+    fhr = base_trace(minutes, hz, seed=seed)
+    t = np.arange(n) / hz
+    toco = add_contractions(n, hz)
+    for ct in np.arange(60, n / hz, 180)[:n_contractions]:
+        fhr -= 25 * np.exp(-((t - (ct + 30)) ** 2) / (2 * 20 ** 2))     # late decel
+        fhr += 25 * np.exp(-((t - (ct + 110)) ** 2) / (2 * 18 ** 2))    # acceleration
+    return from_arrays(fhr=fhr, hz=hz, toco=toco)
+
+
 def trace_tachysystole(minutes=30, hz=4.0, fhr_abnormal=False, seed=0):
     """>5 contractions per 10 min. Optionally with abnormal FHR."""
     n = int(minutes * 60 * hz)

@@ -7,7 +7,7 @@ from .version import __version__
 from .io import Signal, load_csv
 from .preprocess import preprocess
 from .features import extract_features
-from .guidelines import get_pack
+from .guidelines import get_pack, classify
 from .alerts import score_and_alert
 from .models import EpochResult, FeatureSummary
 
@@ -68,7 +68,7 @@ def analyze(
         )
 
     feats = extract_features(clean)
-    category = pack.classify(feats)
+    category = classify(pack, feats)
     alert, concerns, score, trend = score_and_alert(
         category, feats, clean.quality, meta, previous
     )

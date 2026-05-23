@@ -11,6 +11,7 @@ prolonged ROM, etc.) which raises the escalation threshold downward.
 from __future__ import annotations
 
 from .features import Features
+from .guidelines import reassuring_compensation
 from .models import AlertLevel, Category, Concern, Severity, Trend, QualityReport
 
 # scoring constants (tunable, documented in spec)
@@ -218,6 +219,21 @@ def score_and_alert(
             Severity.LOW, "Lower usable-signal fraction; interpret with caution.",
             supporting_channels=quality.accepted_channels,
             evidence={"usable_fraction": quality.usable_fraction}))
+
+    # ---- protective features (auditability only, no score effect) ----
+    # Surface the 'are variability/accelerations preserved?' answer explicitly so
+    # a reviewer can see why a decel-morphology concern was not treated as the
+    # abnormal extreme. The category modifier (guidelines.classify) is what
+    # actually keeps such a trace out of the critical band.
+    if reassuring_compensation(f):
+        concerns.append(Concern(
+            "protective_features", "Preserved variability and accelerations",
+            Severity.INFO,
+            "Accelerations with moderate variability — strongest bedside "
+            "evidence against current fetal acidosis.",
+            supporting_channels=["fhr"],
+            evidence={"n_accelerations": len(f.accelerations),
+                      "variability_bpm": f.variability_bpm}))
 
     score = max(score, 0.0)
     if score >= CRITICAL_THRESHOLD:
