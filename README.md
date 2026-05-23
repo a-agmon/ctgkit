@@ -92,9 +92,11 @@ ctgkit.plot("epoch.csv", result, save_path="trace.png")
 If you have the raw arrays (e.g. from a live monitor) instead of a file:
 
 ```python
-sig = ctgkit.from_arrays(fhr=fhr_array, hz=4.0, toco=toco_array)
+sig = ctgkit.from_arrays(fhr=fhr_array, hz=4.0, toco=toco_array)  # set hz to YOUR sample rate
 result = ctgkit.analyze(sig, guideline="acog")
 ```
+
+> `from_arrays` never infers the rate — pass the real `hz`, or it assumes 4.0. If you only have per-sample timestamps, derive `hz` from them first; see [Time column & sampling rate](#time-column--sampling-rate-hz).
 
 Try it without any data using the built-in synthetic generator:
 
@@ -176,6 +178,71 @@ time_s,fhr,toco
 
 Missing samples may be blank or `0` (a `0` heart rate is treated as signal loss).
 
+### Time column & sampling rate (`hz`)
+
+ctgkit is a **fixed-rate model**: internally a signal is *channel arrays + one scalar `hz`*. Every time-based result — durations, "variability <5 bpm for N min", decelerations ≥ 2/3/5 min, contractions per 10 min, and the 30-minute contract — is computed from `sample_index / hz`. The per-sample timestamps are **not** used during analysis; at most they are read once to *infer* `hz`. So a correct `hz` is mandatory, and the time column exists only to derive it.
+
+**The time column must be *numeric* seconds.** Only the gaps between samples are used, so the absolute origin is irrelevant — both *seconds-from-start* (`0, 0.25, 0.5, …`) and *Unix epoch seconds* (`1700000000.00, 1700000000.25, …`) infer the same rate. Datetime **strings** (`2024-06-01T09:00:00`) are **not** parsed.
+
+How each entry point obtains `hz`:
+
+| Entry point | `hz` behaviour |
+|---|---|
+| `load_csv(path)` | **Infers** `hz` from a *numeric, regular* time column (named `time_s`/`time`/`t`/`sec`/`seconds`). No such column → falls back to `4.0`. |
+| `from_arrays(...)` | **Never infers** — it has no time argument. Pass `hz` explicitly, or it assumes `4.0`. |
+
+Two failure modes when a CSV carries datetime **strings**:
+
+- **Recognised time-alias name** (`time`, `t`, …) → `load_csv` attempts `float("2024-…")` and raises `SignalError`.
+- **Unrecognised name** (e.g. `timestamp`) → the column is *silently ignored* and `hz` falls back to `4.0`. No error, but every time-based result is quietly miscalibrated.
+
+Either way: **convert the datetime column to numeric seconds and derive `hz` from the gaps first.** Use whichever stack you already have —
+
+```python
+# --- Polars ---
+import polars as pl, ctgkit
+df = pl.read_csv("epoch.csv", try_parse_dates=True)          # timestamp -> Datetime
+df = df.with_columns(
+    ((pl.col("timestamp") - pl.col("timestamp").first())
+        .dt.total_microseconds() / 1_000_000).alias("time_s")
+)
+hz = 1.0 / float(df["time_s"].diff().drop_nulls().median())  # derive rate from the gaps
+sig = ctgkit.from_arrays(fhr=df["fhr"].to_numpy(), toco=df["toco"].to_numpy(), hz=hz)
+```
+
+```python
+# --- Pandas ---
+import pandas as pd, ctgkit
+df = pd.read_csv("epoch.csv")
+t = pd.to_datetime(df["timestamp"], format="ISO8601")
+df["time_s"] = (t - t.iloc[0]).dt.total_seconds()
+hz = 1.0 / df["time_s"].diff().dropna().median()
+sig = ctgkit.from_arrays(fhr=df["fhr"].to_numpy(float),
+                         toco=df["toco"].to_numpy(float), hz=hz)
+```
+
+```python
+# --- Or: write a numeric time_s column and let load_csv infer hz for you ---
+df.select(["time_s", "fhr", "toco"]).write_csv("epoch_seconds.csv")   # Polars
+sig = ctgkit.load_csv("epoch_seconds.csv")    # hz inferred from time_s; no manual calc
+```
+
+> If your sampling is genuinely irregular (large spread in the gaps), resample onto a uniform grid before analysis — ctgkit assumes a uniform time base, so a single inferred `hz` would misplace samples in time.
+
+#### Trimming a long recording to the most recent 30 minutes
+
+The 30-minute window is purely time-based, so it works off `time_s` independently of `hz`. Trim **before** calling ctgkit so the signal processing only runs on 30 minutes:
+
+```python
+EXPECTED_MIN, TOL_MIN = 30.0, 2.0
+last_s = df["time_s"][-1]
+if last_s / 60.0 > EXPECTED_MIN + TOL_MIN:           # only trim if beyond 32 min
+    df = df.filter(pl.col("time_s") >= last_s - EXPECTED_MIN * 60.0)
+sig = ctgkit.from_arrays(fhr=df["fhr"].to_numpy(), toco=df["toco"].to_numpy(), hz=hz)
+```
+
+A complete, runnable walkthrough — datetime-string CSV → all four conversion styles → window → analyse → plot — is in [`examples/timestamped_csv_to_plot.ipynb`](examples/timestamped_csv_to_plot.ipynb).
+
 ### A note on TOCO quality
 
 The toco channel is held to the same quality gate as FHR (raw usable ≥ 0.80). This has two consequences worth understanding:
@@ -191,7 +258,7 @@ The guidelines are written around a **30-minute review window**, so that's the c
 
 - **Too short or too long?** With `analyze()`'s exploratory defaults it still analyzes and adds a note to `result.warnings`. Duration-based rules are measured against *actual* elapsed time, so a short trace simply may not trip them.
 - **In a service, use `analyze_service()`** (or `analyze(..., strict_epoch=True)`), which **refuses** off-length epochs with a `SignalError` rather than risk a falsely reassuring score. See [Recommended service configuration](#recommended-service-configuration).
-- *(Planned: auto-window long recordings to the most recent 30 min.)*
+- **Long recording?** Trim to the most recent 30 min before analysis — see [Time column & sampling rate](#time-column--sampling-rate-hz) for the recipe. *(A built-in auto-window is planned.)*
 
 ---
 
