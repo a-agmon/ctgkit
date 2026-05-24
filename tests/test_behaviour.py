@@ -133,7 +133,8 @@ def test_bad_signal_never_reassures():
     sig.fhr[: int(sig.n_samples * 0.7)] = np.nan
     r = analyze(sig)
     assert r.category is None
-    assert r.alert != AlertLevel.NONE
+    assert r.alert == AlertLevel.QUALITY      # technical channel, not clinical
+    assert r.alert != AlertLevel.NONE          # but never reassurance
 
 
 def test_clean_signal_is_high_confidence():

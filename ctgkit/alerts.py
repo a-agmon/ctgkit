@@ -45,16 +45,20 @@ def score_and_alert(
     concerns: list[Concern] = []
     score = 0.0
 
-    # No usable FHR -> warning (uncertainty), never 'none'
+    # No usable FHR -> cannot assess. This is a QUALITY (technical) alert, not a
+    # clinical concern and not reassurance: it belongs in the sensor-check / FSE
+    # workflow, NOT the clinical alert stream, so unreadable traces don't drive
+    # alert fatigue. Carries no clinical score.
     if category is None or f is None:
         concerns.append(Concern(
             "signal_quality_risk", "Insufficient fetal heart signal",
             Severity.MODERATE,
-            "FHR signal quality too low to assign a category; review trace.",
+            "FHR signal quality too low to assign a category; check transducer "
+            "placement or consider a direct fetal scalp electrode.",
             supporting_channels=quality.accepted_channels,
             evidence={"usable_fraction": quality.usable_fraction},
         ))
-        return AlertLevel.WARNING, concerns, 50.0, Trend.UNKNOWN
+        return AlertLevel.QUALITY, concerns, 0.0, Trend.UNKNOWN
 
     # base contribution from category
     if category == Category.ABNORMAL:

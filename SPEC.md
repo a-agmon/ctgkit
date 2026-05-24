@@ -134,7 +134,7 @@ CSV / arrays
       short-gap interpolation (≤4 s) → toco flatline-artifact mask →
       per-channel usable-fraction → confidence (high/med/low)
    │
-   ▼  (if FHR unusable → no category, alert=warning, never "none")
+   ▼  (if FHR unusable → no category, alert=quality [technical channel], never "none")
    │
 [3] Feature extraction                ← features.py
       baseline (rolling 10-min, excursions excluded) + slope
@@ -160,9 +160,9 @@ EpochResult  (category, alert, concerns, confidence, trend, features, quality)
 
 - **high** — raw FHR usable ≥ 0.95
 - **medium** — raw FHR usable ≥ 0.80
-- **low** — raw FHR usable < 0.80 → channel not accepted → `category=None`, `alert=warning`
+- **low** — raw FHR usable < 0.80 → channel not accepted → `category=None`, `alert=quality`
 
-(Heavy interpolation, >20% of samples, downgrades confidence one notch.) If FHR is unusable the library returns `category=None`, `alert=warning`, `confidence=low` — it does *not* emit a comforting "Category 1 / none." Enforced by a hard safety floor and tests.
+(Heavy interpolation, >20% of samples, downgrades confidence one notch.) If FHR is unusable the library returns `category=None`, `alert=quality`, `confidence=low` — a technical/equipment notice (check the transducer / consider a scalp electrode), kept OUT of the clinical alert stream so unreadable traces don't drive alert fatigue. It does *not* emit a comforting "Category 1 / none." Enforced by a hard safety floor and tests.
 
 The **toco** channel is gated the same way: it is used to type decelerations as `late`/`variable` **only when it passes the quality gate** (`"toco" in accepted_channels`). A present-but-degraded toco is excluded, and decels fall back to `timing-uncertain` rather than being mislabeled.
 
@@ -237,7 +237,7 @@ Concern labels include: `persistent_tachycardia`, `low_baseline`, `rising_baseli
 | Field | Type | Notes |
 |---|---|---|
 | `category` | `Category \| None` | `None` only when FHR unusable |
-| `alert` | `AlertLevel` | `none` / `warning` / `critical` |
+| `alert` | `AlertLevel` | `none` / `warning` / `critical` (clinical) + `quality` (unreadable trace, technical) |
 | `concerns` | `list[Concern]` | severity-ranked |
 | `confidence` | `str` | `high` / `medium` / `low` |
 | `trend` | `Trend` | vs `previous` epoch |

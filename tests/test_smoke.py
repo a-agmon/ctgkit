@@ -16,7 +16,8 @@ def test_bad_signal_never_reassures():
     s = synth_epoch("normal"); s.fhr[: int(len(s.fhr)*0.7)] = np.nan
     r = analyze(s)
     assert r.category is None
-    assert r.alert != AlertLevel.NONE
+    assert r.alert == AlertLevel.QUALITY      # technical channel, not clinical
+    assert r.alert != AlertLevel.NONE          # but never reassurance
 
 def test_acog_broader_cat2():
     s = synth_epoch("late_decels")

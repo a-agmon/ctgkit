@@ -167,18 +167,29 @@ def main(argv: list[str]) -> None:
             auc_all = rank_auc([r[f"{pk}_score"] for r in rows], y)
             auc_use = rank_auc([r[f"{pk}_score"] for r in usable_rows],
                                [r[label_key] for r in usable_rows])
+            # QUALITY is a technical channel, not a clinical alert. Clinical
+            # alert burden (the alert-fatigue metric) excludes it; nothing is
+            # hidden because quality cases are still surfaced for sensor review.
+            quality = [r[f"{pk}_alert"] == "quality" for r in rows]
+            clinical = [r[f"{pk}_alert"] in ("warning", "critical") for r in rows]
+            n_quality = sum(quality)
+            adv_quality = sum(1 for r, q in zip(rows, quality) if q and r[label_key])
+            n_clinical = sum(clinical)
             defs = {
-                "alert=critical":        [r[f"{pk}_alert"] == "critical" for r in rows],
-                "alert>=warning":        [r[f"{pk}_alert"] in ("warning", "critical") for r in rows],
-                "category=3 (ABNORMAL)": [r[f"{pk}_cat"] == 3 for r in rows],
+                "alert=critical":            [r[f"{pk}_alert"] == "critical" for r in rows],
+                "clinical alert (warn+crit)": clinical,
+                "any flag (clinical|quality)": [c or q for c, q in zip(clinical, quality)],
+                "category=3 (ABNORMAL)":      [r[f"{pk}_cat"] == 3 for r in rows],
             }
             au = f"{auc_use:.3f}" if auc_use is not None else "n/a"
             print(f"\n  [{pk}]  usable-category {usable}/{n}   "
                   f"score-AUC {auc_all:.3f} all / {au} usable")
-            print(f"    {'positive rule':24}  sens   spec   ppv    npv    TP/FP/FN/TN")
+            print(f"    clinical-alert burden {n_clinical}/{n} ({100*n_clinical/n:.0f}%)   "
+                  f"quality(technical) {n_quality}/{n} (adverse {adv_quality})")
+            print(f"    {'positive rule':28}  sens   spec   ppv    npv    TP/FP/FN/TN")
             for name, pred in defs.items():
                 c = confusion(pred, y)
-                print(f"    {name:24}  {c['sens']:.2f}   {c['spec']:.2f}   "
+                print(f"    {name:28}  {c['sens']:.2f}   {c['spec']:.2f}   "
                       f"{c['ppv']:.2f}   {c['npv']:.2f}   "
                       f"{c['tp']}/{c['fp']}/{c['fn']}/{c['tn']}")
 
