@@ -155,6 +155,25 @@ def score_and_alert(
             Severity.LOW, f"+{f.baseline_slope_bpm_per_min:.1f} bpm/min over epoch.",
             trend=Trend.WORSENING, supporting_channels=["fhr"]))
 
+    # falling baseline trend — on real CTG a declining terminal baseline is the
+    # single strongest predictor of acidaemia (benchmark audit), so it carries
+    # at least as much weight as a rising one. Graded: a clear drift vs a steep
+    # fall toward terminal bradycardia.
+    if f.baseline_slope_bpm_per_min is not None:
+        slope = f.baseline_slope_bpm_per_min
+        if slope <= -2.0:
+            score += 18
+            concerns.append(Concern(
+                "falling_baseline", "Steeply falling baseline",
+                Severity.HIGH, f"{slope:.1f} bpm/min over epoch.",
+                trend=Trend.WORSENING, supporting_channels=["fhr"]))
+        elif slope <= -1.0:
+            score += 10
+            concerns.append(Concern(
+                "falling_baseline", "Falling baseline",
+                Severity.MODERATE, f"{slope:.1f} bpm/min over epoch.",
+                trend=Trend.WORSENING, supporting_channels=["fhr"]))
+
     # variability
     if f.variability_bpm is not None:
         if f.variability_low_min >= 50:
