@@ -10,10 +10,17 @@ import numpy as np
 from ctgkit import from_arrays
 
 
-def base_trace(minutes=30, hz=4.0, baseline=140.0, var_sd=2.6, seed=0):
+def _scaled_variability(n, hz, target_bw, rng):
+    """Short-term variability component scaled to a target peak-to-trough (bpm)."""
+    fast = np.convolve(rng.normal(0, 1, n), np.ones(int(hz * 3)) / (hz * 3), mode="same")
+    spread = np.percentile(fast, 90) - np.percentile(fast, 10)
+    return fast * (target_bw / spread) if spread > 0 else fast
+
+
+def base_trace(minutes=30, hz=4.0, baseline=140.0, var_bw=12.0, seed=0):
     n = int(minutes * 60 * hz)
     rng = np.random.default_rng(seed)
-    fast = var_sd * np.convolve(rng.normal(0, 1, n), np.ones(int(hz * 3)) / (hz * 3), mode="same")
+    fast = _scaled_variability(n, hz, var_bw, rng)
     slow = 4.0 * np.sin(2 * np.pi * 0.01 * np.arange(n) / hz)
     return baseline + slow + fast
 
@@ -41,12 +48,13 @@ def trace_with_decel(width_s, depth=50.0, at_frac=0.5, with_toco=False,
 
 
 def trace_low_variability(low_minutes, minutes=30, hz=4.0, baseline=140.0, seed=0):
-    """Near-flat variability (sd~0.15) for the first `low_minutes`, normal after."""
+    """Reduced variability (~1.5 bpm) for the first `low_minutes`, moderate after."""
     n = int(minutes * 60 * hz)
     rng = np.random.default_rng(seed)
     cut = int(low_minutes * 60 * hz)
-    sd = np.where(np.arange(n) < cut, 0.15, 2.6)
-    fast = np.convolve(rng.normal(0, 1, n) * sd, np.ones(int(hz * 3)) / (hz * 3), mode="same")
+    fast = np.where(np.arange(n) < cut,
+                    _scaled_variability(n, hz, 1.5, rng),
+                    _scaled_variability(n, hz, 12.0, rng))
     fhr = baseline + 4.0 * np.sin(2 * np.pi * 0.01 * np.arange(n) / hz) + fast
     return from_arrays(fhr=fhr, hz=hz, toco=add_contractions(n, hz))
 
@@ -58,7 +66,7 @@ def trace_recurrent_late(n_contractions=10, minutes=30, hz=4.0, seed=0):
     t = np.arange(n) / hz
     toco = add_contractions(n, hz)
     for ct in np.arange(60, n / hz, 180)[:n_contractions]:
-        fhr -= 25 * np.exp(-((t - (ct + 30)) ** 2) / (2 * 20 ** 2))   # lag 30 s
+        fhr -= 35 * np.exp(-((t - (ct + 30)) ** 2) / (2 * 20 ** 2))   # lag 30 s
     return from_arrays(fhr=fhr, hz=hz, toco=toco)
 
 
@@ -71,7 +79,7 @@ def trace_recurrent_late_with_accels(n_contractions=10, minutes=30, hz=4.0, seed
     t = np.arange(n) / hz
     toco = add_contractions(n, hz)
     for ct in np.arange(60, n / hz, 180)[:n_contractions]:
-        fhr -= 25 * np.exp(-((t - (ct + 30)) ** 2) / (2 * 20 ** 2))     # late decel
+        fhr -= 35 * np.exp(-((t - (ct + 30)) ** 2) / (2 * 20 ** 2))     # late decel
         fhr += 25 * np.exp(-((t - (ct + 110)) ** 2) / (2 * 18 ** 2))    # acceleration
     return from_arrays(fhr=fhr, hz=hz, toco=toco)
 

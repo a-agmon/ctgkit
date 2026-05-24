@@ -72,8 +72,12 @@ def reassuring_compensation(f: Features) -> bool:
     compensating fetus' (suspicious) from 'recurrent late decels on a flat
     trace' (pathological). It never overrides a hard pathological feature —
     those are handled by `_common_cat3`.
+
+    Requires >=2 accelerations: a single transient is not reactivity, and a
+    lone (possibly spurious) acceleration must not be enough to stand down a
+    recurrent-decel pattern.
     """
-    return len(f.accelerations) >= 1 and _moderate_variability(f)
+    return len(f.accelerations) >= 2 and _moderate_variability(f)
 
 
 def classify(pack: GuidelinePack, f: Features) -> Category:

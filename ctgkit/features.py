@@ -123,40 +123,56 @@ def estimate_baseline(fhr: np.ndarray, hz: float, win_min: float = 10.0):
     return round(baseline, 1), round(slope, 2)
 
 
-def estimate_variability(fhr: np.ndarray, hz: float):
-    """Per-minute short-term variability band; returns (mean_bpm, minutes_below_5).
+def _rolling_mean(x: np.ndarray, w: int) -> np.ndarray:
+    """Edge-correct boxcar mean: normalise by the number of samples actually
+    summed at each position. Plain ``convolve(mode='same')`` zero-pads beyond
+    the array, which corrupts the trend (and therefore the residual) near the
+    edges of every window it is applied to."""
+    if w < 1:
+        w = 1
+    k = np.ones(w)
+    num = np.convolve(x, k, mode="same")
+    den = np.convolve(np.ones(len(x)), k, mode="same")
+    return num / den
 
-    Uses the amplitude of the de-trended signal where 'trend' is a longer
-    (~30 s) running mean, so genuine baseline wander is removed and only the
-    short-term oscillation that clinicians read as 'variability' remains.
-    The band width is taken as ~4x the robust standard deviation of the
-    residual, which maps onto the visual peak-to-trough bandwidth.
+
+def estimate_variability(fhr: np.ndarray, hz: float):
+    """Per-minute baseline-variability bandwidth; returns (median_bpm, minutes_below_5).
+
+    Variability is the amplitude of the short-term oscillation around the local
+    baseline. We remove wander slower than ~30 s with an EDGE-CORRECTED moving
+    mean (over the whole signal, once), then take the robust peak-to-trough
+    (P90-P10) of the residual in each 1-min window.
+
+    The previous version detrended each minute with a zero-padded boxcar whose
+    edge artifact inflated the band several-fold on real recordings (median
+    ~57 bpm vs the physiologic 5-25), which silently disabled reduced-variability
+    detection and made the NICE pack flag every trace. Detrending once with an
+    edge-correct mean and reading a robust percentile band fixes that.
     """
     spm = int(hz * 60)
     if spm <= 0:
         return None, 0.0
+    mask = np.isfinite(fhr)
+    idx = np.where(mask)[0]
+    if len(idx) < spm:
+        return None, 0.0
+    xi = np.interp(np.arange(len(fhr)), idx, fhr[idx])
+    detr = xi - _rolling_mean(xi, int(round(30.0 * hz)))
     bands = []
     low_minutes = 0.0
     for s in range(0, len(fhr), spm):
-        seg = fhr[s:s + spm]
-        mask = np.isfinite(seg)
-        if mask.sum() < spm * 0.5:
+        ok = mask[s:s + spm]
+        if ok.sum() < spm * 0.5:
             continue
-        seg = seg.copy()
-        idx = np.where(mask)[0]
-        seg = np.interp(np.arange(len(seg)), idx, seg[idx])
-        trend = _smooth(seg, hz, 30.0)        # remove baseline wander
-        detr = seg - trend[: len(seg)]
-        # robust sigma via MAD, band ~= 4 sigma (≈ visual peak-to-trough)
-        mad = np.median(np.abs(detr - np.median(detr)))
-        sigma = 1.4826 * mad
-        amp = float(4.0 * sigma)
+        seg = detr[s:s + spm][ok]
+        amp = float(np.percentile(seg, 90) - np.percentile(seg, 10))
         bands.append(amp)
         if amp < 5.0:
             low_minutes += 1.0
     if not bands:
         return None, 0.0
-    return round(float(np.mean(bands)), 1), low_minutes
+    return round(float(np.median(bands)), 1), low_minutes
 
 
 def detect_accelerations(fhr: np.ndarray, hz: float, baseline: float | None):
