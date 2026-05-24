@@ -15,6 +15,7 @@ from .models import EpochResult, AlertLevel
 
 _ALERT_COLOR = {
     AlertLevel.NONE: "#2e7d32",
+    AlertLevel.QUALITY: "#607d8b",   # slate: technical/quality, not a clinical alert
     AlertLevel.WARNING: "#f9a825",
     AlertLevel.CRITICAL: "#c62828",
 }

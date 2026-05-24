@@ -24,10 +24,20 @@ class Category(int, Enum):
 
 
 class AlertLevel(str, Enum):
-    """Alert is ORTHOGONAL to category. Category is guideline-faithful;
-    alert answers 'is escalation justified now, given persistence/trend/quality
-    /risk stacking?'. This split is the core anti-alert-fatigue design."""
+    """Clinical escalation level, ORTHOGONAL to category. Category is
+    guideline-faithful; alert answers 'is escalation justified now, given
+    persistence/trend/risk stacking?'. This split is the core anti-alert-fatigue
+    design.
+
+    QUALITY is a separate, NON-clinical channel: the trace cannot be assessed
+    (insufficient FHR signal), so it is a technical/equipment notice (reposition
+    the transducer, consider a fetal scalp electrode) rather than a fetal-concern
+    alarm. It is deliberately distinct from NONE (which would imply reassurance)
+    and from WARNING/CRITICAL (which imply a clinical concern), so unreadable
+    traces do not inflate the clinical alert stream.
+    """
     NONE = "none"
+    QUALITY = "quality"
     WARNING = "warning"
     CRITICAL = "critical"
 
