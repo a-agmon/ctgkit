@@ -178,20 +178,28 @@ def score_and_alert(
                 Severity.MODERATE, f"{slope:.1f} bpm/min over epoch.",
                 trend=Trend.WORSENING, supporting_channels=["fhr"]))
 
-    # variability
+    # variability — minimal/absent variability is a primary hypoxia marker.
+    # Judge on the median per-minute bandwidth (the estimator is accurate now),
+    # with the count of <5 bpm minutes as supporting DURATION evidence. Keying
+    # only on the minute-count missed predominantly-flat windows that fell just
+    # short of the 30-min bar (e.g. 24/30 min minimal at ~3 bpm).
     if f.variability_bpm is not None:
-        if f.variability_low_min >= 50:
+        v = f.variability_bpm
+        lo = f.variability_low_min
+        detail = f"Median variability {v:.1f} bpm; <5 bpm for {lo:.0f} min."
+        ev = {"variability_bpm": v, "low_min": lo}
+        if v < 3 or lo >= 50:          # absent, or sustained reduced
             score += 25
             concerns.append(Concern(
                 "reduced_variability", "Reduced variability",
-                Severity.HIGH, f"Variability <5 bpm for {f.variability_low_min:.0f} min.",
-                duration_min=f.variability_low_min, supporting_channels=["fhr"]))
-        elif f.variability_low_min >= 30:
+                Severity.HIGH, detail, duration_min=lo,
+                supporting_channels=["fhr"], evidence=ev))
+        elif v < 5 or lo >= 30:        # minimal (predominantly flat window)
             score += 12
             concerns.append(Concern(
                 "reduced_variability", "Reduced variability",
-                Severity.MODERATE, f"Variability <5 bpm for {f.variability_low_min:.0f} min.",
-                duration_min=f.variability_low_min, supporting_channels=["fhr"]))
+                Severity.MODERATE, detail, duration_min=lo,
+                supporting_channels=["fhr"], evidence=ev))
 
     # contractions / tachysystole
     if f.tachysystole:

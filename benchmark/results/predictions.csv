@@ -101,7 +101,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1100,7.18,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1101,7.16,False,False,True,2,warning,135.0,2,warning,135.0,2,warning,135.0,2,warning,135.0
 1102,7.35,False,False,True,2,warning,100.0,2,warning,100.0,2,warning,100.0,2,warning,100.0
-1103,7.31,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
+1103,7.31,False,False,True,2,watch,42.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 1104,6.92,True,True,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
 1105,7.27,False,False,True,2,watch,70.0,2,watch,70.0,2,watch,70.0,2,watch,70.0
 1106,7.25,False,False,True,2,watch,40.0,1,none,10.0,2,watch,40.0,2,watch,40.0
@@ -145,7 +145,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1144,7.28,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1145,7.35,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1146,7.22,False,False,True,3,critical,173.0,3,critical,173.0,2,warning,103.0,3,critical,173.0
-1147,7.1,False,False,True,1,none,0.0,1,none,0.0,2,none,30.0,2,none,30.0
+1147,7.1,False,False,True,1,none,12.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 1148,7.32,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1149,7.26,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
 1150,7.31,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -153,7 +153,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1152,7.23,False,False,True,2,warning,85.0,2,warning,85.0,2,warning,85.0,2,warning,85.0
 1153,7.29,False,False,True,2,warning,65.0,2,warning,65.0,2,warning,65.0,2,warning,65.0
 1154,7.18,False,False,True,1,none,8.0,1,none,8.0,1,none,8.0,1,none,8.0
-1155,7.34,False,False,True,1,none,0.0,1,none,0.0,2,none,30.0,2,none,30.0
+1155,7.34,False,False,True,1,none,12.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 1156,7.03,True,True,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1157,7.11,False,False,True,2,warning,87.0,2,warning,87.0,2,warning,87.0,2,warning,87.0
 1158,6.87,True,True,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -190,7 +190,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1189,7.36,False,False,True,2,none,30.0,2,none,30.0,2,none,30.0,2,none,30.0
 1190,7.21,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
 1191,7.34,False,False,True,2,warning,100.0,2,warning,100.0,2,warning,100.0,2,warning,100.0
-1192,7.3,False,False,True,2,watch,42.0,2,watch,42.0,2,watch,42.0,2,watch,42.0
+1192,7.3,False,False,True,2,watch,54.0,2,watch,54.0,2,watch,54.0,2,watch,54.0
 1193,7.32,False,False,True,2,watch,60.0,2,watch,60.0,2,watch,60.0,2,watch,60.0
 1194,7.35,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
 1195,7.3,False,False,True,2,warning,115.0,2,warning,115.0,2,warning,115.0,2,warning,115.0
@@ -262,11 +262,11 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1261,7.39,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1262,7.21,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,1,none,0.0
 1263,7.21,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,2,none,30.0
-1264,7.35,False,False,True,1,none,18.0,1,none,18.0,2,warning,48.0,2,warning,48.0
+1264,7.35,False,False,True,1,none,30.0,1,none,30.0,2,warning,60.0,2,warning,60.0
 1265,7.21,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
 1266,7.23,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1267,7.16,False,False,True,1,none,0.0,1,none,0.0,2,none,30.0,2,none,30.0
-1268,7.34,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
+1268,7.34,False,False,True,2,watch,42.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 1269,7.32,False,False,True,2,warning,70.0,2,warning,70.0,2,warning,70.0,2,warning,70.0
 1270,7.18,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1271,7.31,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -299,7 +299,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1298,7.26,False,False,True,2,warning,90.0,2,warning,90.0,2,warning,90.0,2,warning,90.0
 1299,7.22,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1300,7.35,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
-1301,7.37,False,False,True,1,none,8.0,1,none,8.0,2,none,38.0,2,none,38.0
+1301,7.37,False,False,True,1,none,20.0,1,none,20.0,2,watch,50.0,2,watch,50.0
 1302,7.24,False,False,True,1,none,10.0,1,none,10.0,1,none,10.0,1,none,10.0
 1303,7.14,False,False,True,2,warning,85.0,2,warning,85.0,2,warning,85.0,2,warning,85.0
 1304,7.3,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -313,7 +313,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1312,7.33,False,False,True,1,none,10.0,1,none,10.0,1,none,10.0,1,none,10.0
 1313,7.34,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1314,7.22,False,False,True,2,warning,85.0,2,warning,85.0,2,warning,85.0,2,warning,85.0
-1315,7.19,False,False,True,2,watch,70.0,2,watch,70.0,2,watch,70.0,2,watch,70.0
+1315,7.19,False,False,True,2,watch,82.0,2,watch,82.0,2,watch,82.0,2,watch,82.0
 1316,7.24,False,False,True,1,none,0.0,3,critical,100.0,2,none,30.0,1,none,0.0
 1317,7.23,False,False,True,2,warning,137.0,2,warning,137.0,2,warning,137.0,2,warning,137.0
 1318,7.22,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -325,7 +325,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1324,7.29,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
 1325,7.08,False,False,True,2,watch,68.0,2,watch,68.0,2,watch,68.0,2,watch,68.0
 1326,7.29,False,False,True,2,warning,125.0,2,warning,125.0,2,warning,125.0,2,warning,125.0
-1327,7.31,False,False,True,1,none,0.0,1,none,0.0,2,none,30.0,2,none,30.0
+1327,7.31,False,False,True,1,none,12.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 1328,7.13,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1329,7.09,False,False,True,2,warning,93.0,2,warning,93.0,2,warning,93.0,2,warning,93.0
 1330,7.19,False,False,True,2,warning,90.0,2,warning,90.0,2,warning,90.0,2,warning,90.0
@@ -347,7 +347,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1346,7.31,False,False,True,2,none,30.0,2,none,30.0,2,none,30.0,2,none,30.0
 1347,7.14,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1348,7.11,False,False,True,2,warning,90.0,2,warning,90.0,2,warning,90.0,2,warning,90.0
-1349,7.32,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
+1349,7.32,False,False,True,2,watch,62.0,2,watch,62.0,2,watch,62.0,2,watch,62.0
 1350,7.18,False,False,True,3,critical,230.0,3,critical,230.0,3,critical,230.0,3,critical,230.0
 1351,7.15,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1352,7.18,False,False,True,2,warning,133.0,2,warning,133.0,2,warning,133.0,2,warning,133.0
@@ -369,7 +369,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1368,7.21,False,False,True,2,watch,40.0,2,watch,40.0,2,watch,40.0,2,watch,40.0
 1369,7.3,False,False,True,1,none,10.0,1,none,10.0,1,none,10.0,2,watch,40.0
 1370,7.03,True,True,True,2,warning,118.0,2,warning,118.0,2,warning,118.0,2,warning,118.0
-1371,7.18,False,True,True,2,watch,60.0,2,watch,60.0,2,watch,60.0,2,watch,60.0
+1371,7.18,False,True,True,2,watch,72.0,2,watch,72.0,2,watch,72.0,2,watch,72.0
 1372,7.29,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1373,7.03,True,True,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1374,7.19,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
@@ -384,7 +384,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1383,7.47,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1384,7.24,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1385,7.23,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
-1386,7.37,False,False,True,2,watch,52.0,2,watch,52.0,2,watch,52.0,2,watch,52.0
+1386,7.37,False,False,True,2,watch,64.0,2,watch,64.0,2,watch,64.0,2,watch,64.0
 1387,7.28,False,False,True,2,none,30.0,2,none,30.0,2,none,30.0,2,none,30.0
 1388,7.32,False,False,True,3,critical,155.0,3,critical,155.0,2,warning,85.0,3,critical,155.0
 1389,7.24,False,False,True,2,warning,70.0,1,warning,40.0,2,warning,70.0,2,warning,70.0
@@ -413,7 +413,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1412,7.2,False,True,True,2,warning,135.0,2,warning,135.0,2,warning,135.0,2,warning,135.0
 1413,7.29,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1414,7.35,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
-1415,7.4,False,False,True,2,watch,60.0,2,watch,60.0,2,watch,60.0,2,watch,60.0
+1415,7.4,False,False,True,2,watch,72.0,2,watch,72.0,2,watch,72.0,2,watch,72.0
 1416,7.19,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,1,none,0.0
 1417,7.26,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 1418,6.98,True,True,True,2,watch,60.0,2,watch,60.0,2,watch,60.0,2,watch,60.0
@@ -490,7 +490,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 1489,7.27,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
 1490,6.93,True,True,True,2,watch,58.0,2,watch,58.0,2,watch,58.0,2,watch,58.0
 1491,7.16,False,False,True,2,watch,60.0,2,watch,60.0,2,watch,60.0,2,watch,60.0
-1492,7.3,False,False,True,2,watch,58.0,2,watch,58.0,2,watch,58.0,2,watch,58.0
+1492,7.3,False,False,True,2,watch,70.0,2,watch,70.0,2,watch,70.0,2,watch,70.0
 1493,7.26,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,1,none,0.0
 1494,7.1,False,False,True,2,warning,85.0,2,warning,85.0,2,warning,85.0,2,warning,85.0
 1495,7.03,True,True,True,3,critical,273.0,3,critical,273.0,3,critical,273.0,3,critical,273.0
@@ -516,7 +516,7 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 2009,6.96,True,True,True,3,critical,167.0,3,critical,167.0,2,warning,97.0,3,critical,167.0
 2010,7.3,False,False,True,3,critical,135.0,3,critical,135.0,2,warning,65.0,3,critical,135.0
 2011,7.01,True,True,True,3,critical,273.0,3,critical,273.0,3,critical,273.0,3,critical,273.0
-2012,7.29,False,False,True,1,none,0.0,1,none,0.0,2,none,30.0,2,none,30.0
+2012,7.29,False,False,True,1,none,12.0,1,none,12.0,2,watch,42.0,2,watch,42.0
 2013,6.85,True,True,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 2014,7.32,False,False,True,2,none,30.0,1,none,0.0,2,none,30.0,2,none,30.0
 2015,7.33,False,False,True,2,watch,40.0,1,none,10.0,2,watch,40.0,2,watch,40.0
@@ -538,15 +538,15 @@ record,pH,acidemic_705,composite_adverse,ph_known,figo_cat,figo_alert,figo_score
 2031,7.29,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,2,none,30.0
 2032,7.26,False,False,True,2,watch,58.0,2,watch,58.0,2,watch,58.0,2,watch,58.0
 2033,7.39,False,False,True,1,none,0.0,1,none,0.0,1,none,0.0,1,none,0.0
-2034,7.34,False,False,True,2,none,38.0,2,none,38.0,2,none,38.0,2,none,38.0
+2034,7.34,False,False,True,2,watch,50.0,2,watch,50.0,2,watch,50.0,2,watch,50.0
 2035,7.26,False,False,True,2,warning,110.0,2,warning,110.0,2,warning,110.0,2,warning,110.0
-2036,7.29,False,False,True,2,watch,42.0,2,watch,42.0,2,watch,42.0,2,watch,42.0
+2036,7.29,False,False,True,2,watch,54.0,2,watch,54.0,2,watch,54.0,2,watch,54.0
 2037,7.25,False,False,True,2,watch,42.0,2,watch,42.0,2,watch,42.0,2,watch,42.0
 2038,7.36,False,False,True,2,warning,73.0,2,warning,73.0,2,warning,73.0,2,warning,73.0
 2039,7.32,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 2040,7.23,False,True,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 2041,7.37,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
-2042,7.33,False,False,True,1,none,8.0,1,none,8.0,2,none,38.0,2,none,38.0
+2042,7.33,False,False,True,1,none,20.0,1,none,20.0,2,watch,50.0,2,watch,50.0
 2043,7.08,False,False,True,0,quality,0.0,0,quality,0.0,0,quality,0.0,0,quality,0.0
 2044,7.02,True,True,True,2,watch,58.0,2,watch,58.0,2,watch,58.0,2,watch,58.0
 2045,7.03,True,True,True,3,critical,238.0,3,critical,238.0,3,critical,238.0,3,critical,238.0
