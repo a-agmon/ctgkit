@@ -159,14 +159,22 @@ def main(argv: list[str]) -> None:
         y = [r[label_key] for r in rows]
         print(f"\n### outcome = {label_name}")
         for pk in packs:
-            usable = sum(1 for r in rows if r[f"{pk}_cat"] != 0)
-            auc = rank_auc([r[f"{pk}_score"] for r in rows], y)
+            usable_rows = [r for r in rows if r[f"{pk}_cat"] != 0]
+            usable = len(usable_rows)
+            # AUC over ALL records penalises the score for cases it declined to
+            # assess (no usable signal -> quality warning); the usable-only AUC
+            # is the honest discrimination on traces actually interpreted.
+            auc_all = rank_auc([r[f"{pk}_score"] for r in rows], y)
+            auc_use = rank_auc([r[f"{pk}_score"] for r in usable_rows],
+                               [r[label_key] for r in usable_rows])
             defs = {
                 "alert=critical":        [r[f"{pk}_alert"] == "critical" for r in rows],
                 "alert>=warning":        [r[f"{pk}_alert"] in ("warning", "critical") for r in rows],
                 "category=3 (ABNORMAL)": [r[f"{pk}_cat"] == 3 for r in rows],
             }
-            print(f"\n  [{pk}]  usable-category {usable}/{n}   score-AUC {auc:.3f}")
+            au = f"{auc_use:.3f}" if auc_use is not None else "n/a"
+            print(f"\n  [{pk}]  usable-category {usable}/{n}   "
+                  f"score-AUC {auc_all:.3f} all / {au} usable")
             print(f"    {'positive rule':24}  sens   spec   ppv    npv    TP/FP/FN/TN")
             for name, pred in defs.items():
                 c = confusion(pred, y)
