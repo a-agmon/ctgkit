@@ -29,11 +29,15 @@ def synth_epoch(
     base = {"normal": 140, "tachy": 172, "late_decels": 145,
             "prolonged": 140, "low_var": 138, "noisy": 142}.get(kind, 140)
 
-    # Physiological FHR = slow baseline wander + fast beat-to-beat variability.
+    # Physiological FHR = slow baseline wander + short-term variability. The
+    # short-term component is scaled to a clinical target bandwidth (peak-to-
+    # trough bpm), so the variability estimator reads a realistic value.
     slow = 4.0 * np.sin(2 * np.pi * 0.01 * t)            # very slow wander
-    fast_amp = 0.6 if kind == "low_var" else 2.6          # short-term variability sd
-    fast = fast_amp * rng.normal(0, 1, n)
-    fast = _running(fast, int(hz * 3))                    # smooth to beat scale
+    target_bw = 1.5 if kind == "low_var" else 12.0        # reduced vs moderate
+    fast = _running(rng.normal(0, 1, n), int(hz * 3))     # smooth to beat scale
+    spread = np.percentile(fast, 90) - np.percentile(fast, 10)
+    if spread > 0:
+        fast = fast * (target_bw / spread)
     fhr = base + slow + fast
 
     # contractions every ~3 min

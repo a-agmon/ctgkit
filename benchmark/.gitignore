@@ -1,0 +1,4 @@
+# Raw signal CSVs (150 MB) and download cache are reconstructed by fetch_data.py
+data/signals/
+_cache/
+_tmp/
