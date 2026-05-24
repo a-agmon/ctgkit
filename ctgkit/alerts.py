@@ -266,6 +266,21 @@ def score_and_alert(
     else:
         alert = AlertLevel.NONE
 
+    # CRITICAL must stay trustworthy: it requires either a guideline-abnormal
+    # trace (Category 3) or a SEVERE standalone acute event (prolonged decel
+    # >= 5 min, decel >= 3 min without quick recovery, or sinusoidal). Moderate
+    # concerns stacking on a Category-2 trace escalate to WARNING, not CRITICAL.
+    # On CTU-UHB that stacking path produced 47 critical alerts for 2 acidaemic
+    # babies (PPV 0.04); demoting them to warning keeps them flagged without
+    # diluting what 'critical' means.
+    severe_standalone = (f.has_prolonged_gt5
+                         or (f.has_acute_event_ge3 and not f.quick_recovery)
+                         or f.sinusoidal)
+    if (alert == AlertLevel.CRITICAL
+            and category != Category.ABNORMAL
+            and not severe_standalone):
+        alert = AlertLevel.WARNING
+
     # safety floor: never 'none' on an abnormal category
     if category == Category.ABNORMAL and alert == AlertLevel.NONE:
         alert = AlertLevel.WARNING
