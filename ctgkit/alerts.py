@@ -285,6 +285,19 @@ def score_and_alert(
     if category == Category.ABNORMAL and alert == AlertLevel.NONE:
         alert = AlertLevel.WARNING
 
+    # split WARNING into a low-urgency WATCH (review, don't page) vs a
+    # page-worthy WARNING. A warning is page-worthy only if it carries a
+    # HIGH-severity concern or the trace is worsening vs the previous epoch;
+    # otherwise it is a stable/borderline trace to keep an eye on. WATCH still
+    # flags the trace -- nothing is silenced and low-pH capture is unchanged --
+    # it just lifts stable Category-2 traces out of the page-worthy stream,
+    # which on the ACOG pack is ~half of all records (the dominant fatigue load).
+    if alert == AlertLevel.WARNING:
+        page_worthy = (trend == Trend.WORSENING
+                       or any(c.severity == Severity.HIGH for c in concerns))
+        if not page_worthy:
+            alert = AlertLevel.WATCH
+
     # rank concerns by severity
     order = {Severity.HIGH: 0, Severity.MODERATE: 1, Severity.LOW: 2, Severity.INFO: 3}
     concerns.sort(key=lambda c: order[c.severity])

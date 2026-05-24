@@ -165,7 +165,9 @@ def test_category_ii_stable_no_alert():
                       toco=H.add_contractions(int(30*60*4), 4.0))
     r = analyze(sig, guideline="figo")
     assert r.category == Category.INDETERMINATE
-    assert r.alert in (AlertLevel.NONE, AlertLevel.WARNING)
+    # stable, no high-severity concern, not worsening -> quiet (none or watch),
+    # NOT a page-worthy warning
+    assert r.alert in (AlertLevel.NONE, AlertLevel.WATCH)
 
 
 def test_category_ii_worsening_warning():

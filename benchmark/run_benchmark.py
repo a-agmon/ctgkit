@@ -167,25 +167,29 @@ def main(argv: list[str]) -> None:
             auc_all = rank_auc([r[f"{pk}_score"] for r in rows], y)
             auc_use = rank_auc([r[f"{pk}_score"] for r in usable_rows],
                                [r[label_key] for r in usable_rows])
-            # QUALITY is a technical channel, not a clinical alert. Clinical
-            # alert burden (the alert-fatigue metric) excludes it; nothing is
-            # hidden because quality cases are still surfaced for sensor review.
-            quality = [r[f"{pk}_alert"] == "quality" for r in rows]
-            clinical = [r[f"{pk}_alert"] in ("warning", "critical") for r in rows]
+            # Alert-fatigue metric = PAGE-WORTHY load (warning+critical). WATCH
+            # is flagged-but-not-paged and QUALITY is a technical channel; both
+            # are excluded from the page load but still surface the trace, so
+            # nothing is hidden.
+            alerts = [r[f"{pk}_alert"] for r in rows]
+            quality = [a == "quality" for a in alerts]
+            watch = [a == "watch" for a in alerts]
+            pageworthy = [a in ("warning", "critical") for a in alerts]
             n_quality = sum(quality)
             adv_quality = sum(1 for r, q in zip(rows, quality) if q and r[label_key])
-            n_clinical = sum(clinical)
+            n_page = sum(pageworthy)
+            n_watch = sum(watch)
             defs = {
-                "alert=critical":            [r[f"{pk}_alert"] == "critical" for r in rows],
-                "clinical alert (warn+crit)": clinical,
-                "any flag (clinical|quality)": [c or q for c, q in zip(clinical, quality)],
-                "category=3 (ABNORMAL)":      [r[f"{pk}_cat"] == 3 for r in rows],
+                "alert=critical":            [a == "critical" for a in alerts],
+                "page-worthy (warn+crit)":   pageworthy,
+                "flagged (watch+warn+crit)": [a in ("watch", "warning", "critical") for a in alerts],
+                "category=3 (ABNORMAL)":     [r[f"{pk}_cat"] == 3 for r in rows],
             }
             au = f"{auc_use:.3f}" if auc_use is not None else "n/a"
             print(f"\n  [{pk}]  usable-category {usable}/{n}   "
                   f"score-AUC {auc_all:.3f} all / {au} usable")
-            print(f"    clinical-alert burden {n_clinical}/{n} ({100*n_clinical/n:.0f}%)   "
-                  f"quality(technical) {n_quality}/{n} (adverse {adv_quality})")
+            print(f"    page-worthy {n_page}/{n} ({100*n_page/n:.0f}%)   "
+                  f"watch {n_watch}/{n}   quality(technical) {n_quality}/{n} (adverse {adv_quality})")
             print(f"    {'positive rule':28}  sens   spec   ppv    npv    TP/FP/FN/TN")
             for name, pred in defs.items():
                 c = confusion(pred, y)
