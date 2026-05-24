@@ -50,6 +50,11 @@ class Deceleration:
 PROLONGED_MIN_S = 120.0          # >= 2 min: prolonged
 PROLONGED_SEVERE_S = 300.0       # >= 5 min: severe/critical acute event
 SEVERE_DEPTH_BPM = 60.0          # deep deceleration regardless of duration
+# A deceleration must be backed by real signal. _smooth() interpolates a flat
+# line across dropouts, so a multi-minute signal loss can otherwise masquerade
+# as a deep prolonged deceleration; require at least this fraction of the
+# candidate window to be actual (non-interpolated) samples.
+MIN_DECEL_COVERAGE = 0.5
 
 
 @dataclass
@@ -195,6 +200,12 @@ def detect_decelerations(fhr: np.ndarray, hz: float, baseline: float | None,
         dur_min = (e - s) / hz / 60.0
         dur_s = dur_min * 60.0
         if dur_s < 15:                  # < 15 s ignore
+            continue
+        # require real signal under the candidate: if it is mostly an
+        # interpolated dropout it is signal loss, not a deceleration. Detection
+        # runs on the smoothed (gap-filled) track so brief gaps don't fragment a
+        # genuine decel, but a candidate that is mostly gap is rejected here.
+        if float(np.mean(np.isfinite(fhr[s:e]))) < MIN_DECEL_COVERAGE:
             continue
         seg_vals = track[s:e]
         depth = float(baseline - np.nanmin(seg_vals))
