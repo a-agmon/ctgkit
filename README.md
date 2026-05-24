@@ -34,7 +34,7 @@ For each 30-minute recording, it returns three things, deliberately kept separat
 1. **Category (1 / 2 / 3)** — the guideline's verdict.
    `1` = reassuring, `2` = indeterminate (watch it), `3` = abnormal (act). This is computed by a deterministic rules engine, faithful to whichever guideline you pick.
 
-2. **Alert level (`none` / `warning` / `critical`)** — *not* the same as the category. This answers a different question: *"should someone be paged right now?"* It factors in how long a problem has persisted, whether things are getting worse, and the mother's risk factors. There is also a separate **`quality`** level for traces that can't be read at all: it's a *technical* notice (check the transducer / consider a scalp electrode), not a clinical alarm and not an "all clear", so unreadable traces don't clog the clinical alert stream.
+2. **Alert level (`none` / `watch` / `warning` / `critical`)** — *not* the same as the category. This answers a different question: *"should someone be paged right now?"* `critical` and `warning` are page-worthy; **`watch`** sits between `none` and `warning` for a stable/borderline trace that should stay visible but not page anyone (no high-severity concern, not worsening). It factors in how long a problem has persisted, whether things are getting worse, and the mother's risk factors. There is also a separate **`quality`** level for traces that can't be read at all: it's a *technical* notice (check the transducer / consider a scalp electrode), not a clinical alarm and not an "all clear", so unreadable traces don't clog the clinical alert stream.
 
 3. **Concerns** — a list of specific, machine-readable findings (`recurrent_late_decels`, `reduced_variability`, …), each with a start time, duration, severity, and the numbers that triggered it.
 
@@ -267,7 +267,7 @@ The guidelines are written around a **30-minute review window**, so that's the c
 | Field | What it is |
 |---|---|
 | `category` | `Category.{REASSURING, INDETERMINATE, ABNORMAL}` (1/2/3), or `None` if the FHR signal is too poor to classify |
-| `alert` | `AlertLevel.{NONE, QUALITY, WARNING, CRITICAL}` (`quality` = unreadable trace, a technical notice — not a clinical alert) |
+| `alert` | `AlertLevel.{NONE, WATCH, WARNING, CRITICAL, QUALITY}` — clinical ladder `none < watch < warning < critical` (`watch` = flagged but not page-worthy); `quality` = unreadable trace, a technical notice, not a clinical alert |
 | `concerns` | list of `Concern` objects (label, title, severity, start/duration, evidence) |
 | `confidence` | `'high'` (raw FHR ≥ 0.95) / `'medium'` (≥ 0.80) / `'low'` (< 0.80 → no category), driven by raw signal quality |
 | `trend` | `improving` / `stable` / `worsening` vs the `previous` epoch |

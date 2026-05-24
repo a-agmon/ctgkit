@@ -29,17 +29,26 @@ class AlertLevel(str, Enum):
     persistence/trend/risk stacking?'. This split is the core anti-alert-fatigue
     design.
 
+    The clinical ladder is NONE < WATCH < WARNING < CRITICAL:
+      - NONE     reassuring; no action.
+      - WATCH    flagged for review but NOT page-worthy — a stable/borderline
+                 (typically Category-2) trace with no high-severity concern and
+                 no worsening trend. Keeps it visible without paging anyone.
+      - WARNING  page-worthy: a high-severity concern or a worsening trend.
+      - CRITICAL act now: Category-3 or a severe standalone acute event.
+
     QUALITY is a separate, NON-clinical channel: the trace cannot be assessed
     (insufficient FHR signal), so it is a technical/equipment notice (reposition
     the transducer, consider a fetal scalp electrode) rather than a fetal-concern
     alarm. It is deliberately distinct from NONE (which would imply reassurance)
-    and from WARNING/CRITICAL (which imply a clinical concern), so unreadable
-    traces do not inflate the clinical alert stream.
+    and from the clinical levels, so unreadable traces do not inflate the
+    clinical alert stream.
     """
     NONE = "none"
-    QUALITY = "quality"
+    WATCH = "watch"
     WARNING = "warning"
     CRITICAL = "critical"
+    QUALITY = "quality"
 
 
 class Trend(str, Enum):

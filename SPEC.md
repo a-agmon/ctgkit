@@ -15,7 +15,7 @@ The source analysis makes one decision that drives the whole library: **category
 So `ctgkit` is split into two layers:
 
 1. **A deterministic rules engine** that produces the guideline-faithful category (1/2/3). This is the source of truth and is fully auditable.
-2. **A separate alert scorer** that asks a *different* question — *"is escalation justified now, given persistence, trend, signal quality, and risk stacking?"* — and produces `none` / `warning` / `critical`.
+2. **A separate alert scorer** that asks a *different* question — *"is escalation justified now, given persistence, trend, signal quality, and risk stacking?"* — and produces `none` / `watch` / `warning` / `critical` (where `watch` = flagged for review but not page-worthy).
 
 This is the most defensible near-term design and the central anti-fatigue mechanism. ML is deliberately *not* the spine of v0.1; it's a future layer (§10) for signal quality, morphology, and Category-2 prioritization.
 
@@ -148,7 +148,7 @@ CSV / arrays
    ▼
 [5] Alert scorer (ORTHOGONAL)         ← alerts.py
       category base + acute events + persistence + trend +
-      risk stacking + quality penalty  →  none / warning / critical
+      risk stacking + quality penalty  →  none / watch / warning / critical
    │
    ▼
 EpochResult  (category, alert, concerns, confidence, trend, features, quality)
@@ -237,7 +237,7 @@ Concern labels include: `persistent_tachycardia`, `low_baseline`, `rising_baseli
 | Field | Type | Notes |
 |---|---|---|
 | `category` | `Category \| None` | `None` only when FHR unusable |
-| `alert` | `AlertLevel` | `none` / `warning` / `critical` (clinical) + `quality` (unreadable trace, technical) |
+| `alert` | `AlertLevel` | `none` / `watch` / `warning` / `critical` (clinical; `watch` = flagged, not page-worthy) + `quality` (unreadable trace, technical) |
 | `concerns` | `list[Concern]` | severity-ranked |
 | `confidence` | `str` | `high` / `medium` / `low` |
 | `trend` | `Trend` | vs `previous` epoch |
